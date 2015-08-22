@@ -4,7 +4,12 @@
  */
 
 import forOwn from 'lodash/object/forOwn';
-import mqtt from 'mqtt';
+let mqtt;
+if(DEVICE_TYPE === 'mobile'){
+    mqtt = cordova.require('cordova-plugin-mqtt-service.MQTTService');
+}eles if(DEVICE_TYPE === 'desktop'){
+	mqtt = require('mqtt');
+}
 
 const LoginErrorCode = {
     'success': 0,
@@ -19,18 +24,18 @@ let serverIndex = 0;
 let clientId = null;
 let msgTopicTypeCb = {};
 
-var mqttClient = {
+let mqttClient = {
     connect: function(args){
 		clientId = args.id;
         server = args.server;
-        mqttClientInstance = mqtt.connect(server, {clean: args.cleanSession, clientId: clientId});
-        // here don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
-        mqttClientInstance.on('connect', function () {
+		let opts = {clean: args.cleanSession, clientId: clientId};
+		let successCb = function(){
             console.log("connect mqtt server success");
             window.addEventListener('unload', function () {
                 this.destroy();
             }.bind(this));
-            mqttClientInstance.on('message', function(topic, message) {
+			// messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
+			let messageCb = function(topic, message) {
                 let msgTypeCb = msgTopicTypeCb[topic];
                 let msgHandled = false;
                 if(msgTypeCb){
@@ -62,10 +67,15 @@ var mqttClient = {
                 if(!msgHandled) {
                     console.log("unknown message!");
                 }
-            });
+            };
+			if(DEVICE_TYPE === 'desktop'){
+				mqttClientInstance.on('message', messageCb);
+			}else if(DEVICE_TYPE === 'mobile'){
+				mqtt.onMessage(messageCb);
+			}
             args.cb(LoginErrorCode.success);
-        }.bind(this));
-        this.onError(function(error){
+		}.bind(this);
+		let errorCb = function(error){
             console.log("mqtt connect failed: ", error);
             if(error.message.match(/Identifier rejected/)){
                 args.cb(LoginErrorCode.reLogin);
@@ -84,25 +94,44 @@ var mqttClient = {
                 //server = args.servers[serverIndex];
                 //setTimeout(function() { this.connect(); }, 200);
             //}
-        });
+		}
+		if(DEVICE_TYPE === 'desktop'){
+            mqttClientInstance = mqtt.connect(server, opts);
+            mqttClientInstance.on('connect', sucessCb);
+            this.onError(errorCb);
+		}else if(DEVICE_TYPE === 'mobile'){
+			mqtt.connect(server, opts, successCb, errorCb);
+		}
     },
     destroy: function(){
-        if(mqttClientInstance){
-            mqttClientInstance.end();
-            mqttClientInstance = null;
-            console.log("mqtt client has been destroyed");
-        }
+		if(DEVICE_TYPE === 'desktop'){
+            if(mqttClientInstance){
+                mqttClientInstance.end();
+                mqttClientInstance = null;
+            }
+		}else if(DEVICE_TYPE === 'mobile'){
+			mqtt.end();
+		}
+        console.log("destroy mqtt client");
     },
     subscribe: function(topic){
         //TODO: {qos: 1}, make clear whether subscribe 0 and clean false won't receive old message
-        mqttClientInstance.subscribe(topic);
+		if(DEVICE_TYPE === 'desktop'){
+			mqttClientInstance.subscribe(topic);
+		}else if(DEVICE_TYPE === 'mobile'){
+			mqtt.subscribe(topic);
+		}
     },
     publish: function(topic, object){
 		object["clientId"] = clientId;
 		let strToSend = JSON.stringify(object);
 		console.log("send to " + topic + ": " + strToSend);
         //TODO: {qos: 1}, make clear whether publish 0 and clean false won't receive old message by the other
-        mqttClientInstance.publish(topic, strToSend);
+        if(DEVICE_TYPE === 'desktop'){
+			mqttClientInstance.publish(topic, strToSend);
+		}else if(DEVICE_TYPE === 'mobile'){
+			mqtt.publish(topic, strToSend);
+		}
     },
     onMessage: function(topic, type, cb){
         if(!msgTopicTypeCb[topic]){
@@ -128,7 +157,11 @@ var mqttClient = {
         }
     },
     onClose: function(cb){
-        mqttClientInstance.on('close', cb);
+		if(DEVICE_TYPE === 'desktop'){
+			mqttClientInstance.on('close', cb);
+		}else if(DEVICE_TYPE === 'mobile'){
+			mqtt.onConnectionLost(cb);
+		}
     },
     onError: function(cb){
         mqttClientInstance.on('error',cb);
