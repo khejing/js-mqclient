@@ -7,7 +7,7 @@ import forOwn from 'lodash/object/forOwn';
 let mqtt;
 if(DEVICE_TYPE === 'mobile'){
     mqtt = cordova.require('cordova-plugin-mqtt-service.MQTTService');
-}eles if(DEVICE_TYPE === 'desktop'){
+}else if(DEVICE_TYPE === 'desktop'){
 	mqtt = require('mqtt');
 }
 
