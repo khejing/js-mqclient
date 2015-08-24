@@ -5,10 +5,10 @@
 
 import forOwn from 'lodash/object/forOwn';
 let mqtt;
-if(DEVICE_TYPE === 'mobile' && ISWEBAPP === 'false'){
-	mqtt = cordova.require('cordova-plugin-mqtt-service.MQTTService');
-}else if(DEVICE_TYPE === 'desktop' || ISWEBAPP === 'true'){
+if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE !== 'ios'){
 	mqtt = require('mqtt');
+}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE === 'ios'){
+	mqtt = cordova.require('cordova-plugin-mqtt-service.MQTTService');
 }
 
 const LoginErrorCode = {
@@ -68,9 +68,9 @@ let mqttClient = {
                     console.log("unknown message!");
                 }
             };
-			if(DEVICE_TYPE === 'desktop' || ISWEBAPP === 'true'){
+			if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE !== 'ios'){
 				mqttClientInstance.on('message', messageCb);
-			}else if(DEVICE_TYPE === 'mobile' && ISWEBAPP === 'false'){
+			}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE === 'ios'){
 				mqtt.onMessage(messageCb);
 			}
             args.cb(LoginErrorCode.success);
@@ -95,30 +95,30 @@ let mqttClient = {
                 //setTimeout(function() { this.connect(); }, 200);
             //}
 		}
-		if(DEVICE_TYPE === 'desktop' || ISWEBAPP === 'true'){
+		if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE !== 'ios'){
             mqttClientInstance = mqtt.connect(server, opts);
             mqttClientInstance.on('connect', sucessCb);
             this.onError(errorCb);
-		}else if(DEVICE_TYPE === 'mobile' && ISWEBAPP === 'false'){
+		}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE === 'ios'){
 			mqtt.connect(server, opts, successCb, errorCb);
 		}
     },
     destroy: function(){
-		if(DEVICE_TYPE === 'desktop' || ISWEBAPP === 'true'){
+		if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE !== 'ios'){
             if(mqttClientInstance){
                 mqttClientInstance.end();
                 mqttClientInstance = null;
             }
-		}else if(DEVICE_TYPE === 'mobile' && ISWEBAPP === 'false'){
+		}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE === 'ios'){
 			mqtt.end();
 		}
         console.log("destroy mqtt client");
     },
     subscribe: function(topic){
         //TODO: {qos: 1}, make clear whether subscribe 0 and clean false won't receive old message
-		if(DEVICE_TYPE === 'desktop' || ISWEBAPP === 'true'){
+		if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE !== 'ios'){
 			mqttClientInstance.subscribe(topic);
-		}else if(DEVICE_TYPE === 'mobile' && ISWEBAPP === 'false'){
+		}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE === 'ios'){
 			mqtt.subscribe(topic);
 		}
     },
@@ -127,9 +127,9 @@ let mqttClient = {
 		let strToSend = JSON.stringify(object);
 		console.log("send to " + topic + ": " + strToSend);
         //TODO: {qos: 1}, make clear whether publish 0 and clean false won't receive old message by the other
-        if(DEVICE_TYPE === 'desktop' || ISWEBAPP === 'true'){
+        if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE !== 'ios'){
 			mqttClientInstance.publish(topic, strToSend);
-		}else if(DEVICE_TYPE === 'mobile' && ISWEBAPP === 'false'){
+		}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE === 'ios'){
 			mqtt.publish(topic, strToSend);
 		}
     },
@@ -157,9 +157,9 @@ let mqttClient = {
         }
     },
     onClose: function(cb){
-		if(DEVICE_TYPE === 'desktop' || ISWEBAPP === 'true'){
+		if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE !== 'ios'){
 			mqttClientInstance.on('close', cb);
-		}else if(DEVICE_TYPE === 'mobile' && ISWEBAPP === 'false'){
+		}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE === 'ios'){
 			mqtt.onConnectionLost(cb);
 		}
     },
