@@ -5,10 +5,10 @@
 
 import forOwn from 'lodash/object/forOwn';
 let mqtt;
-if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE === 'webapp'){
+if(NETWORK_TYPE === 'websocket'){
 	mqtt = require('mqtt');
-}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE !== 'webapp'){
-	mqtt = cordova.require('cordova-plugin-mqtt-service.MQTTService');
+}else if(NETWORK_TYPE === 'cordova'){
+	//mqtt = cordova.require('cordova-plugin-mqtt-service.MQTTService');
 }
 
 const LoginErrorCode = {
@@ -68,10 +68,10 @@ let mqttClient = {
                     console.log("unknown message!");
                 }
             };
-			if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE === 'webapp'){
+			if(NETWORK_TYPE === 'websocket'){
 				mqttClientInstance.on('message', messageCb);
-			}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE !== 'webapp'){
-				mqtt.onMessage(messageCb);
+			}else if(NETWORK_TYPE === 'cordova'){
+				//mqtt.onMessage(messageCb);
 			}
             args.cb(LoginErrorCode.success);
 		}.bind(this);
@@ -95,31 +95,31 @@ let mqttClient = {
                 //setTimeout(function() { this.connect(); }, 200);
             //}
 		}
-		if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE === 'webapp'){
+		if(NETWORK_TYPE === 'websocket'){
             mqttClientInstance = mqtt.connect(server, opts);
             mqttClientInstance.on('connect', sucessCb);
             this.onError(errorCb);
-		}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE !== 'webapp'){
-			mqtt.connect(server, opts, successCb, errorCb);
+		}else if(NETWORK_TYPE === 'cordova'){
+			//mqtt.connect(server, opts, successCb, errorCb);
 		}
     },
     destroy: function(){
-		if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE === 'webapp'){
+		if(NETWORK_TYPE === 'websocket'){
             if(mqttClientInstance){
                 mqttClientInstance.end();
                 mqttClientInstance = null;
             }
-		}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE !== 'webapp'){
-			mqtt.end();
+		}else if(NETWORK_TYPE === 'cordova'){
+			//mqtt.end();
 		}
         console.log("destroy mqtt client");
     },
     subscribe: function(topic){
         //TODO: {qos: 1}, make clear whether subscribe 0 and clean false won't receive old message
-		if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE === 'webapp'){
+		if(NETWORK_TYPE === 'websocket'){
 			mqttClientInstance.subscribe(topic);
-		}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE !== 'webapp'){
-			mqtt.subscribe(topic);
+		}else if(NETWORK_TYPE === 'cordova'){
+			//mqtt.subscribe(topic);
 		}
     },
     publish: function(topic, object){
@@ -127,10 +127,10 @@ let mqttClient = {
 		let strToSend = JSON.stringify(object);
 		console.log("send to " + topic + ": " + strToSend);
         //TODO: {qos: 1}, make clear whether publish 0 and clean false won't receive old message by the other
-        if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE === 'webapp'){
+        if(NETWORK_TYPE === 'websocket'){
 			mqttClientInstance.publish(topic, strToSend);
-		}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE !== 'webapp'){
-			mqtt.publish(topic, strToSend);
+		}else if(NETWORK_TYPE === 'cordova'){
+			//mqtt.publish(topic, strToSend);
 		}
     },
     onMessage: function(topic, type, cb){
@@ -157,10 +157,10 @@ let mqttClient = {
         }
     },
     onClose: function(cb){
-		if(DEVICE_TYPE === 'desktop' || MOBILE_TYPE === 'webapp'){
+		if(NETWORK_TYPE === 'websocket'){
 			mqttClientInstance.on('close', cb);
-		}else if(DEVICE_TYPE === 'mobile' && MOBILE_TYPE !== 'webapp'){
-			mqtt.onConnectionLost(cb);
+		}else if(NETWORK_TYPE === 'cordova'){
+			//mqtt.onConnectionLost(cb);
 		}
     },
     onError: function(cb){
