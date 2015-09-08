@@ -97,7 +97,7 @@ let mqttClient = {
 		}
 		if(NETWORK_TYPE === 'websocket'){
             mqttClientInstance = mqtt.connect(server, opts);
-            mqttClientInstance.on('connect', sucessCb);
+            mqttClientInstance.on('connect', successCb);
             this.onError(errorCb);
 		}else if(NETWORK_TYPE === 'cordova'){
 			//mqtt.connect(server, opts, successCb, errorCb);
