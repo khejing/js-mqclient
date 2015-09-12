@@ -25,10 +25,6 @@ let serverIndex = 0;
 let clientId = null;
 let msgTopicTypeCb = {};
 
-function backgroundSerivceErrorCb(e){
-  console.log("background service error: "+e.ErrorMessage);
-}
-
 let mqttClient = {
     connect: function(args){
 		clientId = args.id;
@@ -121,7 +117,9 @@ let mqttClient = {
                     }else{
                         console.log("background service registering for updates: "+ret.RegisteredForUpdates);
                     }
-                }, backgroundSerivceErrorCb);
+                }, function(){
+                    console.log("background service registering for updates error");
+                });
 			}
             args.cb(LoginErrorCode.success);
 		}.bind(this);
@@ -140,13 +138,21 @@ let mqttClient = {
                         role: args.role
                     }, function(){
                         console.log("login info has been set into background service");
-                    }, backgroundSerivceErrorCb);
+                    }, function(){
+                        console.log("background service set configuration error");
+                    });
                     myService.registerForBootStart(function(ret){
                         console.log("background service registering for boot start: "+ret.RegisteredForBootStart);
-                    }, backgroundSerivceErrorCb);
-                }, backgroundSerivceErrorCb);
-            }
-            successCb();
+                    }, function(){
+                        console.log("background service registering for boot start error");
+                    });
+                    successCb();
+                }, function(){
+                    console.log("background service start service error");
+                });
+            }else{
+                successCb();
+            }            
 		}
     },
     destroy: function(){
@@ -159,12 +165,18 @@ let mqttClient = {
             myService.stopService(function(ret){
                 console.log("background service running: "+ret.ServiceRunning);
                 myService.deregisterForBootStart(function(ret){
-                    console.log("background service registering for boot start: "+ret.RegisteredForBootStart);
-                }, backgroundSerivceErrorCb);
+                    console.log("background service deregistering for boot start: "+ret.RegisteredForBootStart);
+                }, function(){
+                    console.log("background service deregistering for boot start error");
+                });
                 myService.deregisterForUpdates(function(ret){
-                    console.log("background service registering for updates: "+ret.RegisteredForUpdates);
-                }, backgroundSerivceErrorCb);
-            }, backgroundServiceErrorCb);
+                    console.log("background service deregistering for updates: "+ret.RegisteredForUpdates);
+                }, function(){
+                    console.log("background service deregistering for updates error");
+                });
+            }, function(){
+                console.log("background service stop service error");
+            });
 		}
         console.log("destroy mqtt client");
     },
@@ -178,7 +190,9 @@ let mqttClient = {
                 topic: topic
             }, function(){
                 console.log("subscribe "+topic+" info has been set into background service");
-            }, backgroundSerivceErrorCb);
+            }, function(){
+                console.log("set subscribe "+topic+" info into background service error");
+            });
 		}
     },
     publish: function(topic, object){
@@ -195,7 +209,9 @@ let mqttClient = {
                 message: strToSend
             }, function(){
                 console.log("publish info has been set into background service");
-            }, backgroundSerivceErrorCb);
+            }, function(){
+                console.log("set publish info into background service error");
+            });
 		}
     },
     onMessage: function(topic, type, cb){
