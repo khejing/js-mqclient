@@ -112,10 +112,14 @@ let mqttClient = {
 				mqttClientInstance.on('message', messageCb);
 			}else if(NETWORK_TYPE === 'cordova'){
                 myService.registerForUpdates(function(ret){
-                    if(ret.LatestResult.type === 'Message'){
-                        messageCb(ret.LatestResult.topic, ret.LatestResult.message);                        
-                    }else if(ret.LatestResult.type === 'LoginError'){
-                        errorCb(ret.LatestResult.error);
+                    if(ret.LatestResult){
+                        if(ret.LatestResult.type === 'Message'){
+                            messageCb(ret.LatestResult.topic, ret.LatestResult.message);
+                        }else if(ret.LatestResult.type === 'LoginError'){
+                            errorCb(ret.LatestResult.error);
+                        }
+                    }else{
+                        console.log("background service registering for updates: "+ret.RegisteredForUpdates);
                     }
                 }, backgroundSerivceErrorCb);
 			}
