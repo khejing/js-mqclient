@@ -5,10 +5,11 @@
 
 import forOwn from 'lodash/object/forOwn';
 let mqtt;
+let myService;
 if(NETWORK_TYPE === 'websocket'){
 	mqtt = require('mqtt');
 }else if(NETWORK_TYPE === 'cordova'){
-	//mqtt = cordova.require('cordova-plugin-mqtt-service.MQTTService');
+    myService = cordova.require("cordova-plugin-transparent-webview-service.TransparentWebViewService");
 }
 
 const LoginErrorCode = {
@@ -24,18 +25,57 @@ let serverIndex = 0;
 let clientId = null;
 let msgTopicTypeCb = {};
 
+function backgroundSerivceErrorCb(e){
+  console.log("background service error: "+e.ErrorMessage);
+}
+
 let mqttClient = {
     connect: function(args){
 		clientId = args.id;
         server = args.server;
 		let opts = {clean: args.cleanSession, clientId: clientId};
+		let errorCb = function(error){
+            if(NETWORKE_TYPE === 'websocket' && PLATFORM === 'android'){
+                console.log("mqtt connect in background service failed: ", error);
+                simpleCordova.onMessage({type: "LoginError", error: error});
+                return;
+            }
+            console.log("mqtt connect failed: ", error);
+            if(error.message.match(/Identifier rejected/)){
+                args.cb(LoginErrorCode.reLogin);
+            } else {
+                args.cb(LoginErrorCode.connectServerFailed);
+            }
+            //TODO: here need consider mqtt server failover
+            //if(isArray(args.servers)) {
+                //serverIndex++;
+                //if(serverIndex == args.servers.length) {
+                //    // We tried all the servers the user gave us and they all failed
+                //    console.log("Error connecting to any of the provided mqtt servers: Is the mqtt server down?");
+                //    return;
+                //}
+                //// Let's try the next server
+                //server = args.servers[serverIndex];
+                //setTimeout(function() { this.connect(); }, 200);
+            //}
+		}
 		let successCb = function(){
-            console.log("connect mqtt server success");
-            window.addEventListener('unload', function () {
-                this.destroy();
-            }.bind(this));
-			// messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
-			let messageCb = function(topic, message) {
+            if(NETWORK_TYPE === 'websocket'){
+                console.log("connect mqtt server success");
+                // TODO: below is useless, should to see if it's necessary
+                /*window.addEventListener('unload', function () {
+                    this.destroy();
+                }.bind(this));*/
+            }
+            // messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
+            let messageCb = function(topic, message) {
+                if(NETWORKE_TYPE === 'websocket' && PLATFORM === 'android'){
+                    if(simpleCordova.isActivityBound()){
+                        console.log("has activity, send message to it");
+                        simpleCordova.onMessage({type: "Message", topic: topic, message: message});
+                        return;
+                    }
+                }
                 let msgTypeCb = msgTopicTypeCb[topic];
                 let msgHandled = false;
                 if(msgTypeCb){
@@ -71,36 +111,38 @@ let mqttClient = {
 			if(NETWORK_TYPE === 'websocket'){
 				mqttClientInstance.on('message', messageCb);
 			}else if(NETWORK_TYPE === 'cordova'){
-				//mqtt.onMessage(messageCb);
+                myService.registerForUpdates(function(ret){
+                    if(ret.LatestResult.type === 'Message'){
+                        messageCb(ret.LatestResult.topic, ret.LatestResult.message);                        
+                    }else if(ret.LatestResult.type === 'LoginError'){
+                        errorCb(ret.LatestResult.error);
+                    }
+                }, backgroundSerivceErrorCb);
 			}
             args.cb(LoginErrorCode.success);
 		}.bind(this);
-		let errorCb = function(error){
-            console.log("mqtt connect failed: ", error);
-            if(error.message.match(/Identifier rejected/)){
-                args.cb(LoginErrorCode.reLogin);
-            } else {
-                args.cb(LoginErrorCode.connectServerFailed);
-            }
-            //TODO: here need consider mqtt server failover
-            //if(isArray(args.servers)) {
-                //serverIndex++;
-                //if(serverIndex == args.servers.length) {
-                //    // We tried all the servers the user gave us and they all failed
-                //    console.log("Error connecting to any of the provided mqtt servers: Is the mqtt server down?");
-                //    return;
-                //}
-                //// Let's try the next server
-                //server = args.servers[serverIndex];
-                //setTimeout(function() { this.connect(); }, 200);
-            //}
-		}
 		if(NETWORK_TYPE === 'websocket'){
             mqttClientInstance = mqtt.connect(server, opts);
             mqttClientInstance.on('connect', successCb);
             this.onError(errorCb);
 		}else if(NETWORK_TYPE === 'cordova'){
-			//mqtt.connect(server, opts, successCb, errorCb);
+            if(!localStorage.loginInfo){
+                myService.startService(function(ret){
+                    console.log("background service running: "+ret.ServiceRunning);
+                    myService.setConfiguration({
+                        type: "LoginInfo",
+                        username: args.username,
+                        password: args.password,
+                        role: args.role
+                    }, function(){
+                        console.log("login info has been set into background service");
+                    }, backgroundSerivceErrorCb);
+                    myService.registerForBootStart(function(ret){
+                        console.log("background service registering for boot start: "+ret.RegisteredForBootStart);
+                    }, backgroundSerivceErrorCb);
+                }, backgroundSerivceErrorCb);
+            }
+            successCb();
 		}
     },
     destroy: function(){
@@ -110,7 +152,15 @@ let mqttClient = {
                 mqttClientInstance = null;
             }
 		}else if(NETWORK_TYPE === 'cordova'){
-			//mqtt.end();
+            myService.stopService(function(ret){
+                console.log("background service running: "+ret.ServiceRunning);
+                myService.deregisterForBootStart(function(ret){
+                    console.log("background service registering for boot start: "+ret.RegisteredForBootStart);
+                }, backgroundSerivceErrorCb);
+                myService.deregisterForUpdates(function(ret){
+                    console.log("background service registering for updates: "+ret.RegisteredForUpdates);
+                }, backgroundSerivceErrorCb);
+            }, backgroundServiceErrorCb);
 		}
         console.log("destroy mqtt client");
     },
@@ -119,7 +169,12 @@ let mqttClient = {
 		if(NETWORK_TYPE === 'websocket'){
 			mqttClientInstance.subscribe(topic);
 		}else if(NETWORK_TYPE === 'cordova'){
-			//mqtt.subscribe(topic);
+            myService.setConfiguration({
+                type: "Subscribe",
+                topic: topic
+            }, function(){
+                console.log("subscribe "+topic+" info has been set into background service");
+            }, backgroundSerivceErrorCb);
 		}
     },
     publish: function(topic, object){
@@ -130,7 +185,13 @@ let mqttClient = {
         if(NETWORK_TYPE === 'websocket'){
 			mqttClientInstance.publish(topic, strToSend);
 		}else if(NETWORK_TYPE === 'cordova'){
-			//mqtt.publish(topic, strToSend);
+            myService.setConfiguration({
+                type: "Publish",
+                topic: topic,
+                message: strToSend
+            }, function(){
+                console.log("publish info has been set into background service");
+            }, backgroundSerivceErrorCb);
 		}
     },
     onMessage: function(topic, type, cb){
@@ -160,7 +221,7 @@ let mqttClient = {
 		if(NETWORK_TYPE === 'websocket'){
 			mqttClientInstance.on('close', cb);
 		}else if(NETWORK_TYPE === 'cordova'){
-			//mqtt.onConnectionLost(cb);
+			//do nothing now
 		}
     },
     onError: function(cb){
