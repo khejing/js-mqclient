@@ -31,7 +31,7 @@ let mqttClient = {
         server = args.server;
 		let opts = {clean: args.cleanSession, clientId: clientId};
 		let errorCb = function(error){
-            if(NETWORKE_TYPE === 'websocket' && PLATFORM === 'android'){
+            if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
                 console.log("mqtt connect in background service failed: ", error);
                 simpleCordova.onMessage({type: "LoginError", error: error});
                 return;
@@ -65,7 +65,7 @@ let mqttClient = {
             }
             // messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
             let messageCb = function(topic, message) {
-                if(NETWORKE_TYPE === 'websocket' && PLATFORM === 'android'){
+                if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
                     if(simpleCordova.isActivityBound()){
                         console.log("has activity, send message to it");
                         simpleCordova.onMessage({type: "Message", topic: topic, message: message});
