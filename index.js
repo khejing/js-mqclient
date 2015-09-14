@@ -58,10 +58,10 @@ let mqttClient = {
 		let successCb = function(){
             if(NETWORK_TYPE === 'websocket'){
                 console.log("connect mqtt server success");
-                // TODO: below is useless, should to see if it's necessary
-                /*window.addEventListener('unload', function () {
+                //TODO: to see whether below effect
+                window.addEventListener('unload', function () {
                     this.destroy();
-                }.bind(this));*/
+                }.bind(this));
             }
             // messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
             let messageCb = function(topic, message) {
@@ -106,13 +106,30 @@ let mqttClient = {
             };
 			if(NETWORK_TYPE === 'websocket'){
 				mqttClientInstance.on('message', messageCb);
+                if(PLATFORM === 'android'){
+                    simpleCordova.onMessage({type: "LoginSuccess"});
+                }
+                args.cb(LoginErrorCode.success);
 			}else if(NETWORK_TYPE === 'cordova'){
                 myService.registerForUpdates(function(ret){
                     if(ret.LatestResult){
-                        if(ret.LatestResult.type === 'Message'){
-                            messageCb(ret.LatestResult.topic, ret.LatestResult.message);
+                        if(ret.LatestResult.type === 'PageFinished'){
+                            myService.setConfiguration({
+                                type: "LoginInfo",
+                                username: args.username,
+                                password: args.password,
+                                role: args.role
+                            }, function(){
+                                console.log("login info has been set into background service");
+                            }, function(){
+                                console.log("background service set configuration error");
+                            });
+                        }else if(ret.LatestResult.type === 'LoginSuccess'){
+                            args.cb(LoginErrorCode.success);
                         }else if(ret.LatestResult.type === 'LoginError'){
                             errorCb(ret.LatestResult.error);
+                        }else if(ret.LatestResult.type === 'Message'){
+                            messageCb(ret.LatestResult.topic, ret.LatestResult.message);
                         }
                     }else{
                         console.log("background service registering for updates: "+ret.RegisteredForUpdates);
@@ -121,7 +138,6 @@ let mqttClient = {
                     console.log("background service registering for updates error");
                 });
 			}
-            args.cb(LoginErrorCode.success);
 		}.bind(this);
 		if(NETWORK_TYPE === 'websocket'){
             mqttClientInstance = mqtt.connect(server, opts);
@@ -131,28 +147,16 @@ let mqttClient = {
             if(!localStorage.loginInfo){
                 myService.startService(function(ret){
                     console.log("background service running: "+ret.ServiceRunning);
-                    myService.setConfiguration({
-                        type: "LoginInfo",
-                        username: args.username,
-                        password: args.password,
-                        role: args.role
-                    }, function(){
-                        console.log("login info has been set into background service");
-                    }, function(){
-                        console.log("background service set configuration error");
-                    });
                     myService.registerForBootStart(function(ret){
                         console.log("background service registering for boot start: "+ret.RegisteredForBootStart);
                     }, function(){
                         console.log("background service registering for boot start error");
                     });
-                    successCb();
                 }, function(){
                     console.log("background service start service error");
                 });
-            }else{
-                successCb();
-            }            
+            }
+            successCb();
 		}
     },
     destroy: function(){
