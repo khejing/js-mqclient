@@ -114,6 +114,7 @@ let mqttClient = {
                 myService.registerForUpdates(function(ret){
                     if(ret.LatestResult){
                         if(ret.LatestResult.type === 'PageFinished'){
+                            console.log("main activity received background PageFinished update!")
                             myService.setConfiguration({
                                 type: "LoginInfo",
                                 username: args.username,
