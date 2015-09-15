@@ -67,7 +67,7 @@ let mqttClient = {
             let messageCb = function(topic, message) {
                 if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
                     if(simpleCordova.isActivityBound()){
-                        console.log("has activity, send message to it");
+                        console.log("has activity, send to it message: "+message+", and topic: "+topic);
                         simpleCordova.onMessage({type: "Message", topic: topic, message: message});
                         return;
                     }
@@ -167,6 +167,7 @@ let mqttClient = {
                 mqttClientInstance = null;
             }
 		}else if(NETWORK_TYPE === 'cordova'){
+            //TODO: add logout in background.js here
             myService.stopService(function(ret){
                 console.log("background service running: "+ret.ServiceRunning);
                 myService.deregisterForBootStart(function(ret){
