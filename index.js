@@ -35,7 +35,7 @@ let mqttClient = {
 		let errorCb = function(error){
             if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
                 console.log("mqtt connect in background service failed: ", error);
-                simpleCordova.onMessage({type: "LoginError", error: error});
+                simpleCordova.onMessage(JSON.stringify({type: "LoginError", error: error}));
                 return;
             }
             console.log("mqtt connect failed: ", error);
@@ -70,7 +70,7 @@ let mqttClient = {
                 if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
                     if(simpleCordova.isActivityBound() && initializationFinished){
                         console.log("has activity, send to it message: "+message+", and topic: "+topic);
-                        simpleCordova.onMessage({type: "Message", topic: topic, message: message});
+                        simpleCordova.onMessage(JSON.stringify({type: "Message", topic: topic, message: message}));
                         return;
                     }
                 }
@@ -109,7 +109,7 @@ let mqttClient = {
 			if(NETWORK_TYPE === 'websocket'){
 				mqttClientInstance.on('message', messageCb);
                 if(PLATFORM === 'android'){
-                    simpleCordova.onMessage({"type": "LoginSuccess"});
+                    simpleCordova.onMessage(JSON.stringify({type: "LoginSuccess"}));
                 }
                 args.cb(LoginErrorCode.success);
 			}else if(NETWORK_TYPE === 'cordova'){
