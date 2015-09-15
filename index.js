@@ -33,12 +33,13 @@ let mqttClient = {
         server = args.server;
 		let opts = {clean: args.cleanSession, clientId: clientId};
 		let errorCb = function(error){
-            if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
-                console.log("mqtt connect in background service failed: "+error.message);
-                simpleCordova.onMessage(JSON.stringify({type: "LoginError", error: error}));
-                return;
+            if(NETWORK_TYPE === 'websocket'){
+                console.log("mqtt connect failed: "+error.message);
+                if(PLATFORM === 'android'){
+                    simpleCordova.onMessage(JSON.stringify({type: "LoginError", error: {message: error.message}}));
+                    return;
+                }
             }
-            console.log("mqtt connect failed: ", error);
             if(error.message.match(/Identifier rejected/)){
                 args.cb(LoginErrorCode.reLogin);
             } else {
@@ -257,7 +258,7 @@ let mqttClient = {
 		}
     },
     onError: function(cb){
-        mqttClientInstance.on('error',cb);
+        mqttClientInstance.on('error', cb);
     },
     // only useful when (NETWORK_TYPE === 'websocket' && PLATFORM === 'android')
     setInitializationFinished: function(){
