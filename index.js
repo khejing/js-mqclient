@@ -24,7 +24,7 @@ let server = null;
 let serverIndex = 0;
 let clientId = null;
 let msgTopicTypeCb = {};
-// only useful when NETWORK_TYPE === 'websocket'
+// only useful when (NETWORK_TYPE === 'websocket' && PLATFORM === 'android')
 let initializationFinished = false;
 
 let mqttClient = {
@@ -113,7 +113,7 @@ let mqttClient = {
                 }
                 args.cb(LoginErrorCode.success);
 			}else if(NETWORK_TYPE === 'cordova'){
-                myService.registerForUpdates(function(ret){
+                let updateCb = function(ret){
                     if(ret.LatestResult){
                         if(ret.LatestResult.type === 'PageFinished'){
                             console.log("main activity received background PageFinished update")
@@ -137,10 +137,14 @@ let mqttClient = {
                             console.log("main activity recevie message from background");
                             messageCb(ret.LatestResult.topic, ret.LatestResult.message);
                         }
+                        myService.registerForUpdates(updateCb, function(){
+                            console.log("background service registering for updates error");
+                        });
                     }else{
                         console.log("background service registering for updates: "+ret.RegisteredForUpdates);
                     }
-                }, function(){
+                };
+                myService.registerForUpdates(updateCb, function(){
                     console.log("background service registering for updates error");
                 });
 			}
@@ -258,7 +262,7 @@ let mqttClient = {
     onError: function(cb){
         mqttClientInstance.on('error',cb);
     },
-    // only useful when NETWORK_TYPE === 'websocket'
+    // only useful when (NETWORK_TYPE === 'websocket' && PLATFORM === 'android')
     setInitializationFinished: function(){
         initializationFinished = true;
     }
