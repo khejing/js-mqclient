@@ -109,7 +109,7 @@ let mqttClient = {
 			if(NETWORK_TYPE === 'websocket'){
 				mqttClientInstance.on('message', messageCb);
                 if(PLATFORM === 'android'){
-                    simpleCordova.onMessage({type: "LoginSuccess"});
+                    simpleCordova.onMessage({"type": "LoginSuccess"});
                 }
                 args.cb(LoginErrorCode.success);
 			}else if(NETWORK_TYPE === 'cordova'){
