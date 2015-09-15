@@ -24,6 +24,8 @@ let server = null;
 let serverIndex = 0;
 let clientId = null;
 let msgTopicTypeCb = {};
+// only useful when NETWORK_TYPE === 'websocket'
+let initializationFinished = false;
 
 let mqttClient = {
     connect: function(args){
@@ -66,7 +68,7 @@ let mqttClient = {
             // messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
             let messageCb = function(topic, message) {
                 if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
-                    if(simpleCordova.isActivityBound()){
+                    if(simpleCordova.isActivityBound() && initializationFinished){
                         console.log("has activity, send to it message: "+message+", and topic: "+topic);
                         simpleCordova.onMessage({type: "Message", topic: topic, message: message});
                         return;
@@ -110,11 +112,12 @@ let mqttClient = {
                     simpleCordova.onMessage({type: "LoginSuccess"});
                 }
                 args.cb(LoginErrorCode.success);
+                initializationFinished = true;
 			}else if(NETWORK_TYPE === 'cordova'){
                 myService.registerForUpdates(function(ret){
                     if(ret.LatestResult){
                         if(ret.LatestResult.type === 'PageFinished'){
-                            console.log("main activity received background PageFinished update!")
+                            console.log("main activity received background PageFinished update")
                             myService.setConfiguration({
                                 type: "LoginInfo",
                                 username: args.username,
@@ -126,10 +129,13 @@ let mqttClient = {
                                 console.log("background service set configuration error");
                             });
                         }else if(ret.LatestResult.type === 'LoginSuccess'){
+                            console.log("main activity receive background LoginSuccess update");
                             args.cb(LoginErrorCode.success);
                         }else if(ret.LatestResult.type === 'LoginError'){
+                            console.log("main activity receive background LoginError update");
                             errorCb(ret.LatestResult.error);
                         }else if(ret.LatestResult.type === 'Message'){
+                            console.log("main activity recevie message from background");
                             messageCb(ret.LatestResult.topic, ret.LatestResult.message);
                         }
                     }else{
