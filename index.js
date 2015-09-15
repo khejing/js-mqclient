@@ -112,7 +112,10 @@ let mqttClient = {
                     simpleCordova.onMessage({type: "LoginSuccess"});
                 }
                 args.cb(LoginErrorCode.success);
-                initializationFinished = true;
+                if(PLATFORM === 'android'){
+                    console.log("initializeion finished");
+                    initializationFinished = true;
+                }
 			}else if(NETWORK_TYPE === 'cordova'){
                 myService.registerForUpdates(function(ret){
                     if(ret.LatestResult){
