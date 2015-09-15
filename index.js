@@ -137,6 +137,11 @@ let mqttClient = {
                             console.log("main activity recevie message from background");
                             messageCb(ret.LatestResult.topic, ret.LatestResult.message);
                         }
+                        myService.deregisterForUpdates(function(ret){
+                            console.log("background service deregistering for updates: "+ret.RegisteredForUpdates);
+                        }, function(){
+                            console.log("background service deregistering for updates error");
+                        });
                         myService.registerForUpdates(updateCb, function(){
                             console.log("background service registering for updates error");
                         });
