@@ -34,7 +34,7 @@ let mqttClient = {
 		let opts = {clean: args.cleanSession, clientId: clientId};
 		let errorCb = function(error){
             if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
-                console.log("mqtt connect in background service failed: ", error);
+                console.log("mqtt connect in background service failed: "+error.message);
                 simpleCordova.onMessage(JSON.stringify({type: "LoginError", error: error}));
                 return;
             }
