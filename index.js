@@ -221,7 +221,7 @@ let mqttClient = {
             myService.setConfiguration({
                 type: "Publish",
                 topic: topic,
-                message: strToSend
+                message: object
             }, function(){
                 console.log("publish info has been set into background service, topic: "+topic+", message: "+strToSend);
             }, function(){
