@@ -70,7 +70,7 @@ let mqttClient = {
             let messageCb = function(topic, message) {
                 if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
                     if(simpleCordova.isActivityBound() && initializationFinished){
-                        console.log("has activity, send to it message: "+message+", and topic: "+topic);
+                        console.log("has activity, send to it, typeof message: "+typeof message+", message: "+message+", topic: "+topic);
                         simpleCordova.onMessage(JSON.stringify({type: "Message", topic: topic, message: message}));
                         return;
                     }
