@@ -67,11 +67,12 @@ let mqttClient = {
                 }.bind(this));
             }
             // messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
+            // NOTE: message is a Buffer object, not a string
             let messageCb = function(topic, message) {
                 if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
                     if(simpleCordova.isActivityBound() && initializationFinished){
-                        console.log("has activity, send to it, typeof message: "+typeof message+", message: "+message+", topic: "+topic);
-                        simpleCordova.onMessage(JSON.stringify({type: "Message", topic: topic, message: message}));
+                        console.log("has activity, send to it, message: "+message+", topic: "+topic);
+                        simpleCordova.onMessage(JSON.stringify({type: "Message", topic: topic, message: message.toString()}));
                         return;
                     }
                 }
@@ -83,7 +84,7 @@ let mqttClient = {
                         jsonObj = JSON.parse(message);
                         console.log("recv json from "+topic+": "+message);
                     } catch(e){
-                        console.log("recv advisory from "+topic+": "+message.toString());
+                        console.log("recv advisory from "+topic+": "+message);
                         for(let i = 0; i < msgTypeCb["advisory"].length; i++){
                             (msgTypeCb["advisory"][i])(message);
                         }
