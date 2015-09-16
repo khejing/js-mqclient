@@ -160,11 +160,13 @@ let mqttClient = {
                     }, function(){
                         console.log("background service registering for boot start error");
                     });
+                    successCb();
                 }, function(){
                     console.log("background service start service error");
                 });
+            }else{
+                successCb();
             }
-            successCb();
 		}
     },
     destroy: function(){
