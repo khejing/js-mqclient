@@ -58,7 +58,7 @@ let mqttClient = {
                 //setTimeout(function() { this.connect(); }, 200);
             //}
 		}
-		let successCb = function(){
+		let successCb = function(serviceState){
             if(NETWORK_TYPE === 'websocket'){
                 console.log("connect mqtt server success");
                 //TODO: to see whether below effect
@@ -157,6 +157,9 @@ let mqttClient = {
                         }
                     }else{
                         console.log("background service registering for updates: "+ret.RegisteredForUpdates);
+                        if(ret.RegisteredForUpdates && serviceState === 'ServiceAlreadyStarted'){
+                            args.cb(LoginErrorCode.success);
+                        }
                     }
                 };
                 //should call every time when started, it will deregisterForUpdates previous callback automatically
@@ -187,7 +190,7 @@ let mqttClient = {
                         console.log("background service start service error");
                     });
                 }else{
-                    successCb();
+                    successCb('ServiceAlreadyStarted');
                 }
             }, function(){
                 console.log("background service getting status error");
