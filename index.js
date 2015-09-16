@@ -127,7 +127,7 @@ let mqttClient = {
                             }, function(){
                                 console.log("login info has been set into background service");
                             }, function(){
-                                console.log("background service set configuration error");
+                                console.log("set login info into background service error");
                             });
                         }else if(ret.LatestResult.type === 'LoginSuccess'){
                             console.log("main activity receive background LoginSuccess update");
@@ -135,6 +135,22 @@ let mqttClient = {
                         }else if(ret.LatestResult.type === 'LoginError'){
                             console.log("main activity receive background LoginError update");
                             errorCb(ret.LatestResult.error);
+                        }else if(ret.LatestResult.type === 'Logout'){
+                            myService.stopService(function(ret){
+                                console.log("background service running: "+ret.ServiceRunning);
+                                myService.deregisterForBootStart(function(ret){
+                                    console.log("background service deregistering for boot start: "+ret.RegisteredForBootStart);
+                                }, function(){
+                                    console.log("background service deregistering for boot start error");
+                                });
+                                myService.deregisterForUpdates(function(ret){
+                                    console.log("background service deregistering for updates: "+ret.RegisteredForUpdates);
+                                }, function(){
+                                    console.log("background service deregistering for updates error");
+                                });
+                            }, function(){
+                                console.log("background service stop service error");
+                            });
                         }else if(ret.LatestResult.type === 'Message'){
                             console.log("main activity recevie message from background");
                             messageCb(ret.LatestResult.topic, ret.LatestResult.message);
@@ -176,25 +192,19 @@ let mqttClient = {
                 mqttClientInstance.end();
                 mqttClientInstance = null;
             }
+            if(PLATFORM === 'android'){
+                console.log("destroy mqtt client in background service");
+                simpleCordova.onMessage(JSON.stringify({type: "Logout"}));
+            }else{
+                console.log("destroy mqtt client");
+            }
 		}else if(NETWORK_TYPE === 'cordova'){
-            //TODO: add logout in background.js here
-            myService.stopService(function(ret){
-                console.log("background service running: "+ret.ServiceRunning);
-                myService.deregisterForBootStart(function(ret){
-                    console.log("background service deregistering for boot start: "+ret.RegisteredForBootStart);
-                }, function(){
-                    console.log("background service deregistering for boot start error");
-                });
-                myService.deregisterForUpdates(function(ret){
-                    console.log("background service deregistering for updates: "+ret.RegisteredForUpdates);
-                }, function(){
-                    console.log("background service deregistering for updates error");
-                });
+            myService.setConfiguration({type: "Logout"}, function(){
+                console.log("logout info has been set into background service");
             }, function(){
-                console.log("background service stop service error");
+                console.log("set logout info into background service error");
             });
 		}
-        console.log("destroy mqtt client");
     },
     subscribe: function(topic){
         //TODO: {qos: 1}, make clear whether subscribe 0 and clean false won't receive old message
