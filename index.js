@@ -115,7 +115,7 @@ let mqttClient = {
                 args.cb(LoginErrorCode.success);
 			}else if(NETWORK_TYPE === 'cordova'){
                 let updateCb = function(ret){
-                    if(ret.LatestResult){
+                    if(ret.LatestResult && ret.LatestResult.type){
                         if(ret.LatestResult.type === 'PageFinished'){
                             console.log("main activity received background PageFinished update")
                             myService.setConfiguration({
@@ -213,19 +213,19 @@ let mqttClient = {
     publish: function(topic, object){
 		object["clientId"] = clientId;
 		let strToSend = JSON.stringify(object);
-		console.log("send to " + topic + ": " + strToSend);
         //TODO: {qos: 1}, make clear whether publish 0 and clean false won't receive old message by the other
         if(NETWORK_TYPE === 'websocket'){
 			mqttClientInstance.publish(topic, strToSend);
-		}else if(NETWORK_TYPE === 'cordova'){
+		    console.log("send to topic: "+topic+", message: "+strToSend);
+        }else if(NETWORK_TYPE === 'cordova'){
             myService.setConfiguration({
                 type: "Publish",
                 topic: topic,
                 message: strToSend
             }, function(){
-                console.log("publish info has been set into background service");
+                console.log("publish info has been set into background service, topic: "+topic+", message: "+strToSend);
             }, function(){
-                console.log("set publish info into background service error");
+                console.log("set publish info into background service error, topic: "+topic+", message: "+strToSend);
             });
 		}
     },
