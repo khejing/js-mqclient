@@ -159,6 +159,7 @@ let mqttClient = {
                         console.log("background service registering for updates: "+ret.RegisteredForUpdates);
                     }
                 };
+                //should call every time when started, it will deregisterForUpdates previous callback automatically
                 myService.registerForUpdates(updateCb, function(){
                     console.log("background service registering for updates error");
                 });
@@ -169,21 +170,28 @@ let mqttClient = {
             mqttClientInstance.on('connect', successCb);
             this.onError(errorCb);
 		}else if(NETWORK_TYPE === 'cordova'){
-            if(!localStorage.loginInfo){
-                myService.startService(function(ret){
-                    console.log("background service running: "+ret.ServiceRunning);
-                    myService.registerForBootStart(function(ret){
-                        console.log("background service registering for boot start: "+ret.RegisteredForBootStart);
+            // getStatus() will call bindService()
+            myService.getStatus(function(status){
+                if(!status.ServiceRunning){
+                    myService.startService(function(ret){
+                        console.log("background service running: "+ret.ServiceRunning);
+                        if(!status.RegisteredForBootStart){
+                            myService.registerForBootStart(function(ret){
+                                console.log("background service registering for boot start: "+ret.RegisteredForBootStart);
+                            }, function(){
+                                console.log("background service registering for boot start error");
+                            });
+                        }
+                        successCb();
                     }, function(){
-                        console.log("background service registering for boot start error");
+                        console.log("background service start service error");
                     });
+                }else{
                     successCb();
-                }, function(){
-                    console.log("background service start service error");
-                });
-            }else{
-                successCb();
-            }
+                }
+            }, function(){
+                console.log("background service getting status error");
+            });
 		}
     },
     destroy: function(){
