@@ -5,11 +5,11 @@
 
 import forOwn from 'lodash/object/forOwn';
 let mqtt;
-let myService;
+let BackgroundService;
 if(NETWORK_TYPE === 'websocket'){
 	mqtt = require('mqtt');
 }else if(NETWORK_TYPE === 'cordova'){
-    myService = cordova.require("cordova-plugin-transparent-webview-service.TransparentWebViewService");
+    BackgroundService = cordova.require("cordova-plugin-transparent-webview-service.TransparentWebViewService");
 }
 
 const LoginErrorCode = {
@@ -119,7 +119,7 @@ let mqttClient = {
                     if(ret.LatestResult && ret.LatestResult.type){
                         if(ret.LatestResult.type === 'PageFinished'){
                             console.log("main activity received background PageFinished update")
-                            myService.setConfiguration({
+                            BackgroundService.setConfiguration({
                                 type: "LoginInfo",
                                 username: args.username,
                                 password: args.password,
@@ -136,14 +136,14 @@ let mqttClient = {
                             console.log("main activity receive background LoginError update");
                             errorCb(ret.LatestResult.error);
                         }else if(ret.LatestResult.type === 'Logout'){
-                            myService.stopService(function(ret){
+                            BackgroundService.stopService(function(ret){
                                 console.log("background service running: "+ret.ServiceRunning);
-                                myService.deregisterForBootStart(function(ret){
+                                BackgroundService.deregisterForBootStart(function(ret){
                                     console.log("background service deregistering for boot start: "+ret.RegisteredForBootStart);
                                 }, function(){
                                     console.log("background service deregistering for boot start error");
                                 });
-                                myService.deregisterForUpdates(function(ret){
+                                BackgroundService.deregisterForUpdates(function(ret){
                                     console.log("background service deregistering for updates: "+ret.RegisteredForUpdates);
                                 }, function(){
                                     console.log("background service deregistering for updates error");
@@ -163,7 +163,7 @@ let mqttClient = {
                     }
                 };
                 //should call every time when started, it will deregisterForUpdates previous callback automatically
-                myService.registerForUpdates(updateCb, function(){
+                BackgroundService.registerForUpdates(updateCb, function(){
                     console.log("background service registering for updates error");
                 });
 			}
@@ -174,12 +174,12 @@ let mqttClient = {
             this.onError(errorCb);
 		}else if(NETWORK_TYPE === 'cordova'){
             // getStatus() will call bindService()
-            myService.getStatus(function(status){
+            BackgroundService.getStatus(function(status){
                 if(!status.ServiceRunning){
-                    myService.startService(function(ret){
+                    BackgroundService.startService(function(ret){
                         console.log("background service running: "+ret.ServiceRunning);
                         if(!status.RegisteredForBootStart){
-                            myService.registerForBootStart(function(ret){
+                            BackgroundService.registerForBootStart(function(ret){
                                 console.log("background service registering for boot start: "+ret.RegisteredForBootStart);
                             }, function(){
                                 console.log("background service registering for boot start error");
@@ -210,7 +210,7 @@ let mqttClient = {
                 console.log("destroy mqtt client");
             }
 		}else if(NETWORK_TYPE === 'cordova'){
-            myService.setConfiguration({type: "Logout"}, function(){
+            BackgroundService.setConfiguration({type: "Logout"}, function(){
                 console.log("logout info has been set into background service");
             }, function(){
                 console.log("set logout info into background service error");
@@ -222,7 +222,7 @@ let mqttClient = {
 		if(NETWORK_TYPE === 'websocket'){
 			mqttClientInstance.subscribe(topic);
 		}else if(NETWORK_TYPE === 'cordova'){
-            myService.setConfiguration({
+            BackgroundService.setConfiguration({
                 type: "Subscribe",
                 topic: topic
             }, function(){
@@ -240,7 +240,7 @@ let mqttClient = {
 			mqttClientInstance.publish(topic, strToSend);
 		    console.log("send to topic: "+topic+", message: "+strToSend);
         }else if(NETWORK_TYPE === 'cordova'){
-            myService.setConfiguration({
+            BackgroundService.setConfiguration({
                 type: "Publish",
                 topic: topic,
                 message: object
