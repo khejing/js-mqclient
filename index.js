@@ -14,9 +14,10 @@ if(NETWORK_TYPE === 'websocket'){
 
 const LoginErrorCode = {
     'success': 0,
-    'credentialError': 1,
-    'reLogin': 2,
-    'connectServerFailed': 3
+    'userNotExist': 1,
+    'passwordError': 2,
+    'reLogin': 3,
+    'connectServerFailed': 4
 };
 
 let mqttClientInstance = null;
