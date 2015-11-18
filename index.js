@@ -94,11 +94,14 @@ let mqttClient = {
                     if(jsonObj){
                         forOwn(msgTypeCb, function(value, key){
                             if(jsonObj[key]){
-                                // if registerd, value.length must be > 0, or it will not exist, see offMessage()
+                                // if registerd, value.length must be > 0, or jsonObj[key] will not exist, see offMessage()
                                 let promise = Promise.resolve();
                                 for(let i = 0; i < value.length; i++){
                                     promise = promise.then(function(ret){
-                                        return (value[i])(jsonObj, ret);
+                                        //有可能在回调函数中修改value，因此需要判断
+                                        if(value[i]){
+                                            return (value[i])(jsonObj, ret);
+                                        }
                                     });
                                 }
                                 msgHandled = true;
