@@ -95,9 +95,11 @@ let mqttClient = {
                         forOwn(msgTypeCb, function(value, key){
                             if(jsonObj[key]){
                                 // if registerd, value.length must be > 0, or it will not exist, see offMessage()
-                                let retPromise = null;
+                                let promise = Promise.resolve();
                                 for(let i = 0; i < value.length; i++){
-                                    retPromise = (value[i])(jsonObj, retPromise);
+                                    promise = promise.then(function(ret){
+                                        return (value[i])(jsonObj, ret);
+                                    });
                                 }
                                 msgHandled = true;
                                 return false;
