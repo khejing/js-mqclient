@@ -62,10 +62,6 @@ let mqttClient = {
 		let successCb = function(serviceState){
             if(NETWORK_TYPE === 'websocket'){
                 console.log("connect mqtt server success");
-                //TODO: to see whether below effect
-                window.addEventListener('unload', function () {
-                    this.destroy();
-                }.bind(this));
             }
             // messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
             // NOTE: message is a Buffer object, not a string
