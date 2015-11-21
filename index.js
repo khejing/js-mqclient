@@ -110,13 +110,10 @@ let mqttClient = {
                     console.log("unknown message!");
                 }
             };
-			if(NETWORK_TYPE === 'websocket'){
-				mqttClientInstance.on('message', messageCb);
-                if(PLATFORM === 'android'){
-                    simpleCordova.onMessage(JSON.stringify({type: "LoginSuccess"}));
-                }
+            if(NETWORK_TYPE === 'websocket'){
+                mqttClientInstance.on('message', messageCb);
                 args.cb(LoginErrorCode.success);
-			}else if(NETWORK_TYPE === 'cordova'){
+            }else if(NETWORK_TYPE === 'cordova'){
                 let updateCb = function(ret){
                     if(ret.LatestResult && ret.LatestResult.type){
                         if(ret.LatestResult.type === 'PageFinished'){
