@@ -220,9 +220,8 @@ let mqttClient = {
 		}
     },
     subscribe: function(topic){
-        //TODO: {qos: 1}, make clear whether subscribe 0 and clean false won't receive old message
 		if(NETWORK_TYPE === 'websocket'){
-			mqttClientInstance.subscribe(topic);
+			mqttClientInstance.subscribe(topic, {qos: 1});
 		}else if(NETWORK_TYPE === 'cordova'){
             BackgroundService.setConfiguration({
                 type: "Subscribe",
@@ -234,11 +233,14 @@ let mqttClient = {
             });
 		}
     },
-    publish: function(topic, object){
+    publishReliably: function(topic, object){
+      this.publish(topic, object, {qos: 1});
+    },
+    publish: function(topic, object, options){
 		object["clientId"] = clientId;
 		let strToSend = JSON.stringify(object);
         if(NETWORK_TYPE === 'websocket'){
-			mqttClientInstance.publish(topic, strToSend, {qos: 1});
+			mqttClientInstance.publish(topic, strToSend, options);
 		    console.log("send to topic: "+topic+", message: "+strToSend);
         }else if(NETWORK_TYPE === 'cordova'){
             BackgroundService.setConfiguration({
