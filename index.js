@@ -111,8 +111,11 @@ let mqttClient = {
                 }
             };
             if(NETWORK_TYPE === 'websocket'){
-                mqttClientInstance.on('message', messageCb);
-                args.cb(LoginErrorCode.success);
+                //TODO: 换成listenerCount()
+                if(mqttClientInstance.listeners('message').length === 0){
+                    mqttClientInstance.on('message', messageCb);
+                    args.cb(LoginErrorCode.success);
+                }
             }else if(NETWORK_TYPE === 'cordova'){
                 let updateCb = function(ret){
                     if(ret.LatestResult && ret.LatestResult.type){
