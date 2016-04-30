@@ -237,9 +237,8 @@ let mqttClient = {
     publish: function(topic, object){
 		object["clientId"] = clientId;
 		let strToSend = JSON.stringify(object);
-        //TODO: {qos: 1}, make clear whether publish 0 and clean false won't receive old message by the other
         if(NETWORK_TYPE === 'websocket'){
-			mqttClientInstance.publish(topic, strToSend);
+			mqttClientInstance.publish(topic, strToSend, {qos: 1});
 		    console.log("send to topic: "+topic+", message: "+strToSend);
         }else if(NETWORK_TYPE === 'cordova'){
             BackgroundService.setConfiguration({
