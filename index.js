@@ -114,8 +114,8 @@ let mqttClient = {
                 //TODO: 换成listenerCount()
                 if(mqttClientInstance.listeners('message').length === 0){
                     mqttClientInstance.on('message', messageCb);
-                    args.cb(LoginErrorCode.success);
                 }
+                args.cb(LoginErrorCode.success);
             }else if(NETWORK_TYPE === 'cordova'){
                 let updateCb = function(ret){
                     if(ret.LatestResult && ret.LatestResult.type){
