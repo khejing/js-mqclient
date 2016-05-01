@@ -37,7 +37,7 @@ let mqttClient = {
     let opts = {clean: args.cleanSession, clientId: clientId};
     let errorCb = function(error){
       if(NETWORK_TYPE === 'websocket'){
-        console.log("mqtt connect failed: "+error.message);
+        Logger.error("mqtt connect failed: "+error.message);
         if(PLATFORM === 'android'){
           simpleCordova.onMessage(JSON.stringify({type: "LoginError", error: {message: error.message}}));
           return;
@@ -63,14 +63,14 @@ let mqttClient = {
     }
     let successCb = function(serviceState){
       if(NETWORK_TYPE === 'websocket'){
-        console.log("connect mqtt server success");
+        Logger.info("connect mqtt server success");
       }
       // messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
       // NOTE: message is a Buffer object, not a string
       let messageCb = function(topic, message) {
         if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
           if(simpleCordova.isActivityBound() && initializationFinished){
-            console.log("has activity, send to it, message: "+message+", topic: "+topic);
+            Logger.info("has activity, send to it, message: "+message+", topic: "+topic);
             simpleCordova.onMessage(JSON.stringify({type: "Message", topic: topic, message: message.toString()}));
             return;
           }
@@ -81,9 +81,9 @@ let mqttClient = {
           let jsonObj = null;
           try{
             jsonObj = JSON.parse(message);
-            console.log("recv json from "+topic+": "+message);
+            Logger.info("recv json from "+topic+": "+message);
           } catch(e){
-            console.log("recv advisory from "+topic+": "+message);
+            Logger.info("recv advisory from "+topic+": "+message);
             for(let i = 0; i < msgTypeCb["advisory"].length; i++){
               (msgTypeCb["advisory"][i])(message);
             }
@@ -109,7 +109,7 @@ let mqttClient = {
           }
         }
         if(!msgHandled) {
-          console.log("unknown message!");
+          Logger.info("unknown message! "+message+"from topic "+topic);
         }
       };
       if(NETWORK_TYPE === 'websocket'){
@@ -120,48 +120,46 @@ let mqttClient = {
         args.cb(LoginErrorCode.success);
       }else if(NETWORK_TYPE === 'cordova'){
         let updateCb = function(ret){
-          Logger.info("last result is "+JSON.stringify(ret.LastestResult));
           if(ret.LatestResult && ret.LatestResult.type){
             if(ret.LatestResult.type === 'PageFinished'){
-              console.log("main activity received background PageFinished update")
+              Logger.info("main activity received background PageFinished update")
               BackgroundService.setConfiguration({
                 type: "LoginInfo",
                 username: args.username,
                 password: args.password,
                 role: args.role
               }, function(){
-                console.log("login info has been set into background service");
+                Logger.info("login info has been set into background service");
               }, function(){
-                console.log("set login info into background service error");
+                Logger.error("set login info into background service error");
               });
             }else if(ret.LatestResult.type === 'LoginSuccess'){
-              console.log("main activity receive background LoginSuccess update");
+              Logger.info("main activity receive background LoginSuccess update");
               args.cb(LoginErrorCode.success);
             }else if(ret.LatestResult.type === 'LoginError'){
-              console.log("main activity receive background LoginError update");
+              Logger.info("main activity receive background LoginError update");
               errorCb(ret.LatestResult.error);
             }else if(ret.LatestResult.type === 'Logout'){
               BackgroundService.stopService(function(ret){
-                console.log("background service running: "+ret.ServiceRunning);
+                Logger.info("after stop service, background service running: "+ret.ServiceRunning);
                 BackgroundService.deregisterForBootStart(function(ret){
-                  console.log("background service deregistering for boot start: "+ret.RegisteredForBootStart);
+                  Logger.info("background service deregistering for boot start: "+ret.RegisteredForBootStart);
                 }, function(){
-                  console.log("background service deregistering for boot start error");
+                  Logger.error("background service deregistering for boot start error");
                 });
                 BackgroundService.deregisterForUpdates(function(ret){
-                  console.log("background service deregistering for updates: "+ret.RegisteredForUpdates);
+                  Logger.info("background service deregistering for updates: "+ret.RegisteredForUpdates);
                 }, function(){
-                  console.log("background service deregistering for updates error");
+                  Logger.error("background service deregistering for updates error");
                 });
               }, function(){
-                console.log("background service stop service error");
+                Logger.error("background service stop service error");
               });
             }else if(ret.LatestResult.type === 'Message'){
-              console.log("main activity recevie message from background");
               messageCb(ret.LatestResult.topic, ret.LatestResult.message);
             }
           }else{
-            console.log("background service registering for updates: "+ret.RegisteredForUpdates);
+            Logger.info("LatestResult don't exist, background service registering for updates: "+ret.RegisteredForUpdates);
             if(ret.RegisteredForUpdates && serviceState === 'ServiceAlreadyStarted'){
               args.cb(LoginErrorCode.success);
             }
@@ -169,7 +167,7 @@ let mqttClient = {
         };
         //should call every time when started, it will deregisterForUpdates previous callback automatically
         BackgroundService.registerForUpdates(updateCb, function(){
-          console.log("background service registering for updates error");
+          Logger.error("background service registering for updates error");
         });
       }
     }.bind(this);
@@ -182,23 +180,23 @@ let mqttClient = {
       BackgroundService.getStatus(function(status){
         if(!status.ServiceRunning){
           BackgroundService.startService(function(ret){
-            console.log("background service running: "+ret.ServiceRunning);
+            Logger.info("after start service, background service running: "+ret.ServiceRunning);
             if(!status.RegisteredForBootStart){
               BackgroundService.registerForBootStart(function(ret){
-                console.log("background service registering for boot start: "+ret.RegisteredForBootStart);
+                Logger.info("background service registering for boot start: "+ret.RegisteredForBootStart);
               }, function(){
-                console.log("background service registering for boot start error");
+                Logger.error("background service registering for boot start error");
               });
             }
             successCb();
           }, function(){
-            console.log("background service start service error");
+            Logger.error("background service start service error");
           });
         }else{
           successCb('ServiceAlreadyStarted');
         }
       }, function(){
-        console.log("background service getting status error");
+        Logger.error("background service getting status error");
       });
     }
   },
@@ -209,16 +207,16 @@ let mqttClient = {
         mqttClientInstance = null;
       }
       if(PLATFORM === 'android'){
-        console.log("destroy mqtt client in background service");
+        Logger.info("destroy mqtt client in background service");
         simpleCordova.onMessage(JSON.stringify({type: "Logout"}));
       }else{
-        console.log("destroy mqtt client");
+        Logger.info("destroy mqtt client");
       }
     }else if(NETWORK_TYPE === 'cordova'){
       BackgroundService.setConfiguration({type: "Logout"}, function(){
-        console.log("logout info has been set into background service");
+        Logger.info("logout info has been set into background service");
       }, function(){
-        console.log("set logout info into background service error");
+        Logger.error("set logout info into background service error");
       });
     }
   },
@@ -230,9 +228,9 @@ let mqttClient = {
         type: "Subscribe",
         topic: topic
       }, function(){
-        console.log("subscribe "+topic+" info has been set into background service");
+        Logger.info("subscribe "+topic+" info has been set into background service");
       }, function(){
-        console.log("set subscribe "+topic+" info into background service error");
+        Logger.error("set subscribe "+topic+" info into background service error");
       });
     }
   },
@@ -241,16 +239,16 @@ let mqttClient = {
     let strToSend = JSON.stringify(object);
     if(NETWORK_TYPE === 'websocket'){
       mqttClientInstance.publish(topic, strToSend);
-      console.log("send to topic: "+topic+", message: "+strToSend);
+      Logger.info("send to topic: "+topic+", message: "+strToSend);
     }else if(NETWORK_TYPE === 'cordova'){
       BackgroundService.setConfiguration({
         type: "Publish",
         topic: topic,
         message: object
       }, function(){
-        console.log("publish info has been set into background service, topic: "+topic+", message: "+strToSend);
+        Logger.info("publish info has been set into background service, topic: "+topic+", message: "+strToSend);
       }, function(){
-        console.log("set publish info into background service error, topic: "+topic+", message: "+strToSend);
+        Logger.error("set publish info into background service error, topic: "+topic+", message: "+strToSend);
       });
     }
   },
