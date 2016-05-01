@@ -233,14 +233,11 @@ let mqttClient = {
             });
 		}
     },
-    publishReliably: function(topic, object){
-      this.publish(topic, object, {qos: 1});
-    },
-    publish: function(topic, object, options){
+    publish: function(topic, object){
 		object["clientId"] = clientId;
 		let strToSend = JSON.stringify(object);
         if(NETWORK_TYPE === 'websocket'){
-			mqttClientInstance.publish(topic, strToSend, options);
+			mqttClientInstance.publish(topic, strToSend);
 		    console.log("send to topic: "+topic+", message: "+strToSend);
         }else if(NETWORK_TYPE === 'cordova'){
             BackgroundService.setConfiguration({
