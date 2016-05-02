@@ -248,7 +248,7 @@ let mqttClient = {
       }, function(){
         Logger.info(Object.assign({eto1_logtype: "publish2service", topic: topic}, object));
       }, function(){
-        Logger.error(Object.assign({eto1_logtype: "publish2serviceError", topic: topic}, object));
+        Logger.error(Object.assign({eto1_logtype: "publish2service", topic: topic}, object));
       });
     }
   },
