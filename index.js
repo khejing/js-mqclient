@@ -174,6 +174,9 @@ let mqttClient = {
     if(NETWORK_TYPE === 'websocket'){
       mqttClientInstance = mqtt.connect(server, opts);
       mqttClientInstance.on('connect', successCb);
+      mqttClientInstance.on('offline', function(){
+          Logger.info({eto1_logtype: "offline"});
+      });
       this.onError(errorCb);
     }else if(NETWORK_TYPE === 'cordova'){
       // getStatus() will call bindService()
