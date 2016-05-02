@@ -122,7 +122,7 @@ let mqttClient = {
         let updateCb = function(ret){
           if(ret.LatestResult && ret.LatestResult.type){
             if(ret.LatestResult.type === 'PageFinished'){
-              Logger.info("main activity received background PageFinished update")
+              Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: "PageFinished"});
               BackgroundService.setConfiguration({
                 type: "LoginInfo",
                 username: args.username,
@@ -133,23 +133,27 @@ let mqttClient = {
                 Logger.error("set login info into background service error");
               });
             }else if(ret.LatestResult.type === 'LoginSuccess'){
-              Logger.info("main activity receive background LoginSuccess update");
+              Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: "LoginSuccess"});
               args.cb(LoginErrorCode.success);
             }else if(ret.LatestResult.type === 'LoginError'){
-              Logger.info("main activity receive background LoginError update");
+              Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: "LoginError", error: ret.LatestResult.error.message});
               errorCb(ret.LatestResult.error);
             }else if(ret.LatestResult.type === 'Logout'){
-              BackgroundService.stopService(function(ret){
-                Logger.info("after stop service, background service running: "+ret.ServiceRunning);
-                BackgroundService.deregisterForBootStart(function(ret){
-                  Logger.info("background service deregistering for boot start: "+ret.RegisteredForBootStart);
+              BackgroundService.stopService(function(stopServiceRet){
+                BackgroundService.deregisterForBootStart(function(deRegBootStartRet){
+                  BackgroundService.deregisterForUpdates(function(deRegUpdateRet){
+                    Logger.info({
+                      eto1_logtype: "serviceUpdate",
+                      LatestResultType: "Logout",
+                      ServiceRunning: stopServiceRet.ServiceRunning,
+                      RegisteredForBootStart: deRegBootStart.RegisteredForBootStart,
+                      RegisteredForupdates: deRegUpdateRet.RegisteredForUpdates
+                    });
+                  }, function(){
+                    Logger.error("background service deregistering for updates error");
+                  });
                 }, function(){
                   Logger.error("background service deregistering for boot start error");
-                });
-                BackgroundService.deregisterForUpdates(function(ret){
-                  Logger.info("background service deregistering for updates: "+ret.RegisteredForUpdates);
-                }, function(){
-                  Logger.error("background service deregistering for updates error");
                 });
               }, function(){
                 Logger.error("background service stop service error");
@@ -158,7 +162,7 @@ let mqttClient = {
               messageCb(ret.LatestResult.topic, ret.LatestResult.message);
             }
           }else{
-            Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: null, serviceState: serviceState});
+            Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: "null", serviceState: serviceState});
             if(ret.RegisteredForUpdates && serviceState === 'ServiceAlreadyStarted'){
               args.cb(LoginErrorCode.success);
             }
