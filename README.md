@@ -1,1 +1,1 @@
-# js-mqclient
+# mqclient.js
