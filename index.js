@@ -4,7 +4,7 @@
  */
 
 import forOwn from 'lodash/object/forOwn';
-import Logger from 'rizhiyi-jslogger';
+import Logger from 'jslogger';
 
 let mqtt;
 let BackgroundService;
