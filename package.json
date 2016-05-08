@@ -1,5 +1,5 @@
 {
-  "name": "mqtt-wrapper",
+  "name": "js-mqclient",
   "version": "0.1.0",
   "description": "",
   "main": "index.js",
@@ -8,12 +8,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/khejing/mqtt-wrapper.git"
+    "url": "https://github.com/khejing/js-mqclient.git"
   },
   "author": "Will Lee",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/khejing/mqtt-wrapper/issues"
+    "url": "https://github.com/khejing/js-mqclient/issues"
   },
-  "homepage": "https://github.com/khejing/mqtt-wrapper"
+  "homepage": "https://github.com/khejing/js-mqclient"
 }
