@@ -30,7 +30,7 @@ let msgTopicTypeCb = {};
 // only useful when (NETWORK_TYPE === 'websocket' && PLATFORM === 'android')
 let initializationFinished = false;
 
-let mqttClient = {
+let mqClient = {
   connect: function(args){
     clientId = args.id;
     server = args.server;
@@ -298,4 +298,4 @@ let mqttClient = {
 };
 
 export {LoginErrorCode};
-export default mqttClient;
+export default mqClient;
