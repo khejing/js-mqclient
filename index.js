@@ -4,7 +4,7 @@
  */
 
 import forOwn from 'lodash/object/forOwn';
-import Logger from 'jslogger';
+import Logger from 'logger.js';
 
 let mqtt;
 let BackgroundService;
