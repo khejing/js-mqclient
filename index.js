@@ -63,7 +63,7 @@ let mqClient = {
     }
     let successCb = function(serviceState){
       if(NETWORK_TYPE === 'websocket'){
-        Logger.info({eto1_logtype: "online"});
+        //Logger.info({eto1_logtype: "online"});
       }
       // messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
       // NOTE: message is a Buffer object, not a string
@@ -178,7 +178,7 @@ let mqClient = {
       mqttClientInstance = mqtt.connect(server, opts);
       mqttClientInstance.on('connect', successCb);
       mqttClientInstance.on('offline', function(){
-          Logger.info({eto1_logtype: "offline"});
+        //Logger.info({eto1_logtype: "offline"});
       });
       this.onError(errorCb);
     }else if(NETWORK_TYPE === 'cordova'){
