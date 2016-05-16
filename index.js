@@ -34,7 +34,7 @@ let mqClient = {
   connect: function(args){
     clientId = args.id;
     server = args.server;
-    let opts = {clean: args.cleanSession, clientId: clientId, keepalive: 5, reconnectPeriod: 8000};
+    let opts = {clean: args.cleanSession, clientId: clientId, keepalive: 5, reconnectPeriod: 9000};
     let errorCb = function(error){
       if(NETWORK_TYPE === 'websocket'){
         Logger.error("mqtt connect failed: "+error.message);
