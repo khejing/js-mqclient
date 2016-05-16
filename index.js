@@ -159,6 +159,7 @@ let mqClient = {
                 Logger.error("background service stop service error");
               });
             }else if(ret.LatestResult.type === 'Message'){
+              Logger.info({eto1_logtype: "recvMessageFromBack", topic: ret.LatestResult.topic, message: ret.LatestResult.message});
               messageCb(ret.LatestResult.topic, ret.LatestResult.message);
             }
           }else{
