@@ -146,7 +146,7 @@ let mqClient = {
                       eto1_logtype: "serviceUpdate",
                       LatestResultType: "Logout",
                       ServiceRunning: stopServiceRet.ServiceRunning,
-                      RegisteredForBootStart: deRegBootStart.RegisteredForBootStart,
+                      RegisteredForBootStart: deRegBootStartRet.RegisteredForBootStart,
                       RegisteredForupdates: deRegUpdateRet.RegisteredForUpdates
                     });
                   }, function(){
