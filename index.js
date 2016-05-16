@@ -162,7 +162,7 @@ let mqClient = {
               messageCb(ret.LatestResult.topic, ret.LatestResult.message);
             }
           }else{
-            Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: "null", serviceState: serviceState});
+            Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: "null"});
             if(ret.RegisteredForUpdates && serviceState === 'ServiceAlreadyStarted'){
               args.cb(LoginErrorCode.success);
             }
@@ -199,6 +199,7 @@ let mqClient = {
             Logger.error("background service start service error");
           });
         }else{
+          Logger.info({eto1_logtype: "serviceAlreadyStartedInLogin"});
           successCb('ServiceAlreadyStarted');
         }
       }, function(){
@@ -252,7 +253,7 @@ let mqClient = {
         topic: topic,
         message: object
       }, function(){
-        //Logger.info(Object.assign({eto1_logtype: "publish2service", topic: topic}, object));
+        Logger.info(Object.assign({eto1_logtype: "publish2service", topic: topic}, object));
       }, function(){
         Logger.error(Object.assign({eto1_logtype: "publish2service", topic: topic}, object));
       });
