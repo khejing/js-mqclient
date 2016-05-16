@@ -70,7 +70,7 @@ let mqClient = {
       let messageCb = function(topic, message) {
         if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
           if(simpleCordova.isActivityBound() && initializationFinished){
-            //Logger.info(Object.assign({eto1_logtype: "send2activity", topic: topic}, JSON.parse(message)));
+            Logger.info(Object.assign({eto1_logtype: "send2activity", topic: topic}, JSON.parse(message)));
             simpleCordova.onMessage(JSON.stringify({type: "Message", topic: topic, message: message.toString()}));
             return;
           }
@@ -81,7 +81,7 @@ let mqClient = {
           let jsonObj = null;
           try{
             jsonObj = JSON.parse(message);
-            //Logger.info(Object.assign({eto1_logtype: "recv", topic: topic}, jsonObj));
+            Logger.info(Object.assign({eto1_logtype: "recv", topic: topic}, jsonObj));
           } catch(e){
             Logger.info("recv advisory from "+topic+": "+message);
             for(let i = 0; i < msgTypeCb["advisory"].length; i++){
