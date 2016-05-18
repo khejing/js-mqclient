@@ -22,6 +22,7 @@ const LoginErrorCode = {
   'connectServerFailed': 4
 };
 
+// only useful when (NETWORK_TYPE === 'websocket')
 let mqttClientInstance = null;
 let server = null;
 let serverIndex = 0;
@@ -29,6 +30,8 @@ let clientId = null;
 let msgTopicTypeCb = {};
 // only useful when (NETWORK_TYPE === 'websocket' && PLATFORM === 'android')
 let initializationFinished = false;
+// only useful when (NETWORK_TYPE === 'cordova' && PLATFORM === 'android')
+let connected = false;
 
 let mqClient = {
   connect: function(args){
@@ -64,6 +67,9 @@ let mqClient = {
     let successCb = function(serviceState){
       if(NETWORK_TYPE === 'websocket'){
         Logger.info({eto1_logtype: "online"});
+        if(PLATFORM === 'android'){
+          simpleCordova.onMessage(JSON.stringify({type: "Online"}));
+        }
       }
       // messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
       // NOTE: message is a Buffer object, not a string
@@ -134,6 +140,7 @@ let mqClient = {
               });
             }else if(ret.LatestResult.type === 'LoginSuccess'){
               Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: "LoginSuccess"});
+              connected = true;
               args.cb(LoginErrorCode.success);
             }else if(ret.LatestResult.type === 'LoginError'){
               Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: "LoginError", error: ret.LatestResult.error.message});
@@ -149,6 +156,7 @@ let mqClient = {
                       RegisteredForBootStart: deRegBootStartRet.RegisteredForBootStart,
                       RegisteredForupdates: deRegUpdateRet.RegisteredForUpdates
                     });
+                    connected = false;
                   }, function(){
                     Logger.error("background service deregistering for updates error");
                   });
@@ -161,6 +169,10 @@ let mqClient = {
             }else if(ret.LatestResult.type === 'Message'){
               Logger.info({eto1_logtype: "recvMessageFromBack", topic: ret.LatestResult.topic, message: ret.LatestResult.message});
               messageCb(ret.LatestResult.topic, ret.LatestResult.message);
+            }else if(ret.LatestResult.type === 'Online'){
+              connected = true;
+            }else if(ret.LatestResult.type === 'Offline'){
+              connected = false;
             }
           }else{
             Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: "null"});
@@ -180,6 +192,10 @@ let mqClient = {
       mqttClientInstance.on('connect', successCb);
       mqttClientInstance.on('offline', function(){
         Logger.info({eto1_logtype: "offline"});
+        mqttClientInstance.connected = false;
+        if(PLATFORM === 'android'){
+          simpleCordova.onMessage(JSON.stringify({type: "Offline"}));
+        }
       });
       this.onError(errorCb);
     }else if(NETWORK_TYPE === 'cordova'){
@@ -291,11 +307,23 @@ let mqClient = {
     }
   },
   onError: function(cb){
-    mqttClientInstance.on('error', cb);
+    if(NETWORK_TYPE === 'websocket'){
+      mqttClientInstance.on('error', cb);
+    }else if(NETWORK_TYPE === 'cordova'){
+      //do nothing now
+    }
   },
   // only useful when (NETWORK_TYPE === 'websocket' && PLATFORM === 'android')
   setInitializationFinished: function(){
     initializationFinished = true;
+  },
+  // only useful when (NETWORK_TYPE === 'cordova' && PLATFORM === 'android')
+  isConnected: function(){
+    if(NETWORK_TYPE === 'websocket'){
+      return mqttClientInstance.connected;
+    }else{
+      return connected;
+    }
   }
 };
 
