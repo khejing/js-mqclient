@@ -289,7 +289,7 @@ let mqClient = {
     msgTopicTypeCb[topic][type].push(cb);
   },
   offMessage: function(topic, type, cb){
-    if(msgTopicTypeCb[topic]){
+    if(msgTopicTypeCb[topic] && msgTopicTypeCb[topic][type]){
       for(let i = 0; i < msgTopicTypeCb[topic][type].length; i++){
         if(msgTopicTypeCb[topic][type][i] === cb){
           if(msgTopicTypeCb[topic][type].length === 1){
