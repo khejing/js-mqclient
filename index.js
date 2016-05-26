@@ -32,6 +32,7 @@ let msgTopicTypeCb = {};
 let initializationFinished = false;
 // only useful when (NETWORK_TYPE === 'cordova' && PLATFORM === 'android')
 let connected = false;
+let serviceInitializationFinished = false;
 
 let mqClient = {
   connect: function(args){
@@ -64,7 +65,7 @@ let mqClient = {
       //setTimeout(function() { this.connect(); }, 200);
       //}
     }
-    let successCb = function(serviceState){
+    let successCb = function(){
       if(NETWORK_TYPE === 'websocket'){
         Logger.info({eto1_logtype: "online"});
         if(PLATFORM === 'android'){
@@ -76,7 +77,7 @@ let mqClient = {
       let messageCb = function(topic, message) {
         if(NETWORK_TYPE === 'websocket' && PLATFORM === 'android'){
           if(simpleCordova.isActivityBound() && initializationFinished){
-            //Logger.info(Object.assign({eto1_logtype: "send2activity", topic: topic}, JSON.parse(message)));
+            Logger.info(Object.assign({eto1_logtype: "send2activity", topic: topic}, JSON.parse(message)));
             simpleCordova.onMessage(JSON.stringify({type: "Message", topic: topic, message: message.toString()}));
             return;
           }
@@ -87,7 +88,7 @@ let mqClient = {
           let jsonObj = null;
           try{
             jsonObj = JSON.parse(message);
-            //Logger.info(Object.assign({eto1_logtype: "recv", topic: topic}, jsonObj));
+            Logger.info(Object.assign({eto1_logtype: "recv", topic: topic}, jsonObj));
           } catch(e){
             Logger.info("recv advisory from "+topic+": "+message);
             for(let i = 0; i < msgTypeCb["advisory"].length; i++){
@@ -140,6 +141,7 @@ let mqClient = {
               });
             }else if(ret.LatestResult.type === 'LoginSuccess'){
               connected = true;
+              serviceInitializationFinished = true;
               args.cb(LoginErrorCode.success);
               Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: "LoginSuccess"});
             }else if(ret.LatestResult.type === 'LoginError'){
@@ -150,6 +152,7 @@ let mqClient = {
                 BackgroundService.deregisterForBootStart(function(deRegBootStartRet){
                   BackgroundService.deregisterForUpdates(function(deRegUpdateRet){
                     connected = false;
+                    serviceInitializationFinished = false;
                     Logger.info({
                       eto1_logtype: "serviceUpdate",
                       LatestResultType: "Logout",
@@ -167,7 +170,7 @@ let mqClient = {
                 Logger.error("background service stop service error");
               });
             }else if(ret.LatestResult.type === 'Message'){
-              //Logger.info({eto1_logtype: "recvMessageFromBack", topic: ret.LatestResult.topic, message: ret.LatestResult.message});
+              Logger.info({eto1_logtype: "recvMessageFromService", topic: ret.LatestResult.topic, message: ret.LatestResult.message});
               messageCb(ret.LatestResult.topic, ret.LatestResult.message);
             }else if(ret.LatestResult.type === 'Online'){
               connected = true;
@@ -177,10 +180,15 @@ let mqClient = {
               Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: "Offline"});
             }
           }else{
-            Logger.info({eto1_logtype: "serviceUpdate", LatestResultType: "null"});
-            if(ret.RegisteredForUpdates && serviceState === 'ServiceAlreadyStarted'){
-              connected = true;
-              args.cb(LoginErrorCode.success);
+            //只有在service正在运行的前提下，activity启动时第一次调用registerForUpdates()的成功回调中，serviceInitializationFinished才会一定为false
+            if(ret.RegisteredForUpdates && !serviceInitializationFinished){
+              BackgroundService.setConfiguration({
+                type: "ActivityStartingWhenServiceRunning"
+              }, function(){
+                Logger.info({eto1_logtype: "activityStarting2service"});
+              }, function(){
+                Logger.error("set activity starting info into background service error");
+              });
             }
           }
         };
@@ -220,7 +228,7 @@ let mqClient = {
           });
         }else{
           Logger.info({eto1_logtype: "serviceAlreadyStartedInLogin"});
-          successCb('ServiceAlreadyStarted');
+          successCb();
         }
       }, function(){
         Logger.error("background service getting status error");
@@ -266,14 +274,14 @@ let mqClient = {
     let strToSend = JSON.stringify(object);
     if(NETWORK_TYPE === 'websocket'){
       mqttClientInstance.publish(topic, strToSend);
-      //Logger.info(Object.assign({eto1_logtype: "websocketPublish", topic: topic}, object));
+      Logger.info(Object.assign({eto1_logtype: "websocketPublish", topic: topic}, object));
     }else if(NETWORK_TYPE === 'cordova'){
       BackgroundService.setConfiguration({
         type: "Publish",
         topic: topic,
         message: object
       }, function(){
-        //Logger.info(Object.assign({eto1_logtype: "publish2service", topic: topic}, object));
+        Logger.info(Object.assign({eto1_logtype: "published2service", topic: topic}, object));
       }, function(){
         Logger.error(Object.assign({eto1_logtype: "publish2service", topic: topic}, object));
       });
@@ -319,6 +327,9 @@ let mqClient = {
   // only useful when (NETWORK_TYPE === 'websocket' && PLATFORM === 'android')
   setInitializationFinished: function(){
     initializationFinished = true;
+  },
+  isInitializationFinished: function(){
+    return initializationFinished;
   },
   // only useful when (NETWORK_TYPE === 'cordova' && PLATFORM === 'android')
   isConnected: function(){
