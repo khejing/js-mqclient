@@ -39,32 +39,6 @@ let mqClient = {
     clientId = args.id;
     server = args.server;
     let opts = {clean: args.cleanSession, clientId: clientId};
-    let errorCb = function(error){
-      if(NETWORK_TYPE === 'websocket'){
-        Logger.error("mqtt connect failed: "+error.message);
-        if(PLATFORM === 'android'){
-          simpleCordova.onMessage(JSON.stringify({type: "LoginError", error: {message: error.message}}));
-          return;
-        }
-      }
-      if(error.message.match(/Identifier rejected/)){
-        args.cb(LoginErrorCode.reLogin);
-      } else {
-        args.cb(LoginErrorCode.connectServerFailed);
-      }
-      //TODO: here need consider mqtt server failover
-      //if(isArray(args.servers)) {
-      //serverIndex++;
-      //if(serverIndex == args.servers.length) {
-      //    // We tried all the servers the user gave us and they all failed
-      //    console.log("Error connecting to any of the provided mqtt servers: Is the mqtt server down?");
-      //    return;
-      //}
-      //// Let's try the next server
-      //server = args.servers[serverIndex];
-      //setTimeout(function() { this.connect(); }, 200);
-      //}
-    }
     let successCb = function(){
       if(NETWORK_TYPE === 'websocket'){
         Logger.info({eto1_logtype: "online"});
@@ -198,16 +172,45 @@ let mqClient = {
         });
       }
     }.bind(this);
+    let offlineCb = function(){
+      mqttClientInstance.connected = false;
+      if(PLATFORM === 'android'){
+        simpleCordova.onMessage(JSON.stringify({type: "Offline"}));
+      }
+      Logger.info({eto1_logtype: "offline"});
+    }
+    let errorCb = function(error){
+      if(NETWORK_TYPE === 'websocket'){
+        Logger.error("mqtt connect failed: "+error.message);
+        if(PLATFORM === 'android'){
+          if(!initializationFinished){
+            simpleCordova.onMessage(JSON.stringify({type: "LoginError", error: {message: error.message}}));
+          }
+          return;
+        }
+      }
+      if(error.message.match(/Identifier rejected/)){
+        args.cb(LoginErrorCode.reLogin);
+      } else {
+        args.cb(LoginErrorCode.connectServerFailed);
+      }
+      //TODO: here need consider mqtt server failover
+      //if(isArray(args.servers)) {
+      //serverIndex++;
+      //if(serverIndex == args.servers.length) {
+      //    // We tried all the servers the user gave us and they all failed
+      //    console.log("Error connecting to any of the provided mqtt servers: Is the mqtt server down?");
+      //    return;
+      //}
+      //// Let's try the next server
+      //server = args.servers[serverIndex];
+      //setTimeout(function() { this.connect(); }, 200);
+      //}
+    }
     if(NETWORK_TYPE === 'websocket'){
       mqttClientInstance = mqtt.connect(server, opts);
       mqttClientInstance.on('connect', successCb);
-      mqttClientInstance.on('offline', function(){
-        mqttClientInstance.connected = false;
-        if(PLATFORM === 'android'){
-          simpleCordova.onMessage(JSON.stringify({type: "Offline"}));
-        }
-        Logger.info({eto1_logtype: "offline"});
-      });
+      mqttClientInstance.on('offline', offlineCb);
       this.onError(errorCb);
     }else if(NETWORK_TYPE === 'cordova'){
       // getStatus() will call bindService()
