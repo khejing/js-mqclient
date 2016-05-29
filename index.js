@@ -279,14 +279,13 @@ let mqClient = {
       mqttClientInstance.publish(topic, strToSend);
       Logger.info(Object.assign({eto1_logtype: "websocketPublish", topic: topic}, object));
     }else if(NETWORK_TYPE === 'cordova'){
+      Logger.info(Object.assign({eto1_logtype: "publishing2service", topic: topic}, object));
       BackgroundService.setConfiguration({
         type: "Publish",
         topic: topic,
         message: object
-      }, function(){
-        Logger.info(Object.assign({eto1_logtype: "published2service", topic: topic}, object));
-      }, function(){
-        Logger.error(Object.assign({eto1_logtype: "publish2service", topic: topic}, object));
+      }, function(){}, function(){
+        Logger.error(Object.assign({eto1_logtype: "publishing2service", topic: topic}, object));
       });
     }
   },
