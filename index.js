@@ -290,7 +290,21 @@ let mqClient = {
     }
   },
   publishReliably: function(topic, object){
-    this.publish(topic, object, {qos: 1});
+    object["clientId"] = clientId;
+    let strToSend = JSON.stringify(object);
+    if(NETWORK_TYPE === 'websocket'){
+      Logger.info(Object.assign({eto1_logtype: "websocketPublishReliably", topic: topic}, object));
+      mqttClientInstance.publish(topic, strToSend, {qos: 1});
+    }else if(NETWORK_TYPE === 'cordova'){
+      Logger.info(Object.assign({eto1_logtype: "publishingReliably2service", topic: topic}, object));
+      BackgroundService.setConfiguration({
+        type: "PublishReliably",
+        topic: topic,
+        message: object
+      }, function(){}, function(){
+        Logger.error(Object.assign({eto1_logtype: "publishingReliably2service", topic: topic}, object));
+      });
+    }
   },
   onMessage: function(topic, type, cb){
     if(!msgTopicTypeCb[topic]){
