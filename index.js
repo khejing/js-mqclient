@@ -289,6 +289,9 @@ let mqClient = {
       });
     }
   },
+  publishReliably: function(topic, object){
+    this.publish(topic, object, {qos: 1});
+  },
   onMessage: function(topic, type, cb){
     if(!msgTopicTypeCb[topic]){
       msgTopicTypeCb[topic] = {};
