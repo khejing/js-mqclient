@@ -22,6 +22,7 @@ let serverIndex = 0;
 let clientId = null;
 let msgTopicTypeCb = {};
 let connected = false;
+let isReconnecting = false;
 
 let mqClient = {
   connect: function(args){
@@ -29,6 +30,7 @@ let mqClient = {
     server = args.server;
     let opts = {clean: args.cleanSession, clientId: clientId};
     let successCb = function(){
+      isReconnecting = false;
       Logger.info({eto1_logtype: "online"});
       // messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
       // NOTE: message is a Buffer object, not a string
@@ -77,15 +79,20 @@ let mqClient = {
       args.cb(LoginErrorCode.success);
     }.bind(this);
     let offlineCb = function(){
+      isReconnecting = true;
       mqttClientInstance.connected = false;
       Logger.info({eto1_logtype: "offline"});
     };
     let errorCb = function(error){
-      Logger.error("mqtt connect failed: "+error.message);
-      if(error.message.match(/Identifier rejected/)){
-        args.cb(LoginErrorCode.reLogin);
-      } else {
-        args.cb(LoginErrorCode.connectServerFailed);
+      if(isReconnecting){
+        Logger.error({eto1_logtype: "mqttReconnectFailed", message: error.message});
+      }else{
+        Logger.error({eto1_logtype: "mqttConnectFailed", message: error.message});
+        if(error.message.match(/Identifier rejected/)){
+          args.cb(LoginErrorCode.reLogin);
+        } else {
+          args.cb(LoginErrorCode.connectServerFailed);
+        }
       }
       //TODO: here need consider mqtt server failover
       //if(isArray(args.servers)) {
@@ -106,6 +113,7 @@ let mqClient = {
     this.onError(errorCb);
   },
   destroy: function(){
+    isReconnecting = false;
     if(mqttClientInstance){
       mqttClientInstance.end();
       mqttClientInstance = null;
