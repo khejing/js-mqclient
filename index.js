@@ -4,7 +4,6 @@
  */
 
 import forOwn from 'lodash/object/forOwn';
-import Logger from 'logger.js';
 
 let mqtt = require('mqtt');
 
@@ -17,21 +16,30 @@ const LoginErrorCode = {
 };
 
 let mqttClientInstance = null;
-let server = null;
 let serverIndex = 0;
 let clientId = null;
 let msgTopicTypeCb = {};
 let connected = false;
 let isReconnecting = false;
+let logger;
 
 let mqClient = {
-  connect: function(args){
-    clientId = args.id;
-    server = args.server;
-    let opts = {clean: args.cleanSession, clientId: clientId};
+  connect: function({
+    cb,
+    cleanSession,
+    id,
+    server,
+    loggerInstance,
+    username,
+    password,
+    role
+  }){
+    logger = loggerInstance;
+    clientId = id;
+    let opts = {clean: cleanSession, clientId: clientId};
     let successCb = function(){
       isReconnecting = false;
-      Logger.info({eto1_logtype: "online"});
+      logger.info({eto1_logtype: "online"});
       // messageCb don't utilize loop provided by event-emitter on(), and implement it again, cause on() can't log unknown messsage, and it need many if(...)... in message callback
       // NOTE: message is a Buffer object, not a string
       let messageCb = function(topic, message) {
@@ -41,9 +49,9 @@ let mqClient = {
           let jsonObj = null;
           try{
             jsonObj = JSON.parse(message);
-            Logger.info(Object.assign({eto1_logtype: "recv", topic: topic}, jsonObj));
+            logger.info(Object.assign({eto1_logtype: "recv", topic: topic}, jsonObj));
           } catch(e){
-            Logger.info("recv advisory from "+topic+": "+message);
+            logger.info("recv advisory from "+topic+": "+message);
             for(let i = 0; i < msgTypeCb["advisory"].length; i++){
               (msgTypeCb["advisory"][i])(message);
             }
@@ -69,41 +77,41 @@ let mqClient = {
           }
         }
         if(!msgHandled) {
-          Logger.info(Object.assign({eto1_logtype: "unknowMsg", topic: topic}, JSON.parse(message)));
+          logger.info(Object.assign({eto1_logtype: "unknowMsg", topic: topic}, JSON.parse(message)));
         }
       };
       //TODO: 换成listenerCount()
       if(mqttClientInstance.listeners('message').length === 0){
         mqttClientInstance.on('message', messageCb);
       }
-      args.cb(LoginErrorCode.success);
+      cb(LoginErrorCode.success);
     }.bind(this);
     let offlineCb = function(){
       isReconnecting = true;
       mqttClientInstance.connected = false;
-      Logger.info({eto1_logtype: "offline"});
+      logger.info({eto1_logtype: "offline"});
     };
     let errorCb = function(error){
       if(isReconnecting){
-        Logger.error({eto1_logtype: "mqttReconnectFailed", message: error.message});
+        logger.error({eto1_logtype: "mqttReconnectFailed", message: error.message});
       }else{
-        Logger.error({eto1_logtype: "mqttConnectFailed", message: error.message});
+        logger.error({eto1_logtype: "mqttConnectFailed", message: error.message});
         if(error.message.match(/Identifier rejected/)){
-          args.cb(LoginErrorCode.reLogin);
+          cb(LoginErrorCode.reLogin);
         } else {
-          args.cb(LoginErrorCode.connectServerFailed);
+          cb(LoginErrorCode.connectServerFailed);
         }
       }
       //TODO: here need consider mqtt server failover
-      //if(isArray(args.servers)) {
+      //if(isArray(servers)) {
       //serverIndex++;
-      //if(serverIndex == args.servers.length) {
+      //if(serverIndex == servers.length) {
       //    // We tried all the servers the user gave us and they all failed
       //    console.log("Error connecting to any of the provided mqtt servers: Is the mqtt server down?");
       //    return;
       //}
       //// Let's try the next server
-      //server = args.servers[serverIndex];
+      //server = servers[serverIndex];
       //setTimeout(function() { this.connect(); }, 200);
       //}
     };
@@ -118,7 +126,7 @@ let mqClient = {
       mqttClientInstance.end();
       mqttClientInstance = null;
     }
-    Logger.info("destroy mqtt client");
+    logger.info("destroy mqtt client");
   },
   subscribe: function(topic){
     mqttClientInstance.subscribe(topic, {qos: 1});
@@ -126,13 +134,13 @@ let mqClient = {
   publish: function(topic, object){
     object["clientId"] = clientId;
     let strToSend = JSON.stringify(object);
-    Logger.info(Object.assign({eto1_logtype: "websocketPublish", topic: topic}, object));
+    logger.info(Object.assign({eto1_logtype: "websocketPublish", topic: topic}, object));
     mqttClientInstance.publish(topic, strToSend);
   },
   publishReliably: function(topic, object){
     object["clientId"] = clientId;
     let strToSend = JSON.stringify(object);
-    Logger.info(Object.assign({eto1_logtype: "websocketPublishReliably", topic: topic}, object));
+    logger.info(Object.assign({eto1_logtype: "websocketPublishReliably", topic: topic}, object));
     mqttClientInstance.publish(topic, strToSend, {qos: 1});
   },
   onMessage: function(topic, type, cb){
