@@ -29,12 +29,12 @@ let mqClient = {
     cleanSession,
     id,
     server,
-    loggerInstance,
+    mqLogger,
     username,
     password,
     role
   }){
-    logger = loggerInstance;
+    logger = mqLogger;
     clientId = id;
     let opts = {clean: cleanSession, clientId: clientId};
     let successCb = function(){
